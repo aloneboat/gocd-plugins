@@ -45,6 +45,7 @@ public class SonarScanTask extends BaseGoPlugin {
         return success(result);
     }
 
+    @Override
     protected GoPluginApiResponse handleTaskExecution(GoPluginApiRequest request) {
         Map executionRequest = (Map) new GsonBuilder().create().fromJson(request.requestBody(), Object.class);
 

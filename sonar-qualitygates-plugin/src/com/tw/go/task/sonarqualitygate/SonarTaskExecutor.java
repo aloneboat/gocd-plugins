@@ -12,11 +12,14 @@ import java.security.GeneralSecurityException;
 import java.util.Map;
 
 public class SonarTaskExecutor extends TaskExecutor {
+    private static final String ENVVAR_NAME_SONAR_USER = "SONAR_USER";
+    private static final String ENVVAR_NAME_SONAR_PASSWORD = "SONAR_PASSWORD";
 
     public SonarTaskExecutor(JobConsoleLogger console, Context context, Map config) {
         super(console, context, config);
     }
 
+    @Override
     public Result execute() throws Exception {
 
         String sonarProjectKey = (String) ((Map) this.config.get(SonarScanTask.SONAR_PROJECT_KEY)).get(GoApiConstants.PROPERTY_NAME_VALUE);
@@ -35,16 +38,16 @@ public class SonarTaskExecutor extends TaskExecutor {
 
             SonarClient sonarClient = new SonarClient(sonarApiUrl);
 
-//            // This might need some auth!
-//            Map envVars = context.getEnvironmentVariables();
-//            if (envVars.get(GoApiConstants.ENVVAR_NAME_SONAR_USER) != null &&
-//                    envVars.get(GoApiConstants.ENVVAR_NAME_SONAR_USER_PASSWORD) != null) {
-//
-//                sonarClient.setBasicAuthentication(envVars.get(GoApiConstants.ENVVAR_NAME_SONAR_USER).toString(), envVars.get(GoApiConstants.ENVVAR_NAME_SONAR_USER_PASSWORD).toString());
-//                log("Logged in as '" + envVars.get(GoApiConstants.ENVVAR_NAME_SONAR_USER).toString() + "' to get the project's quality gate");
-//            } else {
-//                log(" Requesting project's quality gate anonymously.");
-//            }
+            // This might need some auth!
+            Map envVars = context.getEnvironmentVariables();
+            if (envVars.get(ENVVAR_NAME_SONAR_USER) != null &&
+                    envVars.get(ENVVAR_NAME_SONAR_PASSWORD) != null) {
+
+                sonarClient.setBasicAuthentication(envVars.get(ENVVAR_NAME_SONAR_USER).toString(), envVars.get(ENVVAR_NAME_SONAR_PASSWORD).toString());
+                log("Logged in as '" + envVars.get(ENVVAR_NAME_SONAR_PASSWORD).toString() + "' to get the project's quality gate");
+            } else {
+                log(" Requesting project's quality gate anonymously.");
+            }
 
             //get quality gate details
             JSONObject result = sonarClient.getProjectWithQualityGateDetails(sonarProjectKey);
@@ -53,7 +56,7 @@ public class SonarTaskExecutor extends TaskExecutor {
             JSONObject lastPeriod = (JSONObject) periods.get(periods.length() - 1);
 
             String lastDate = (String) lastPeriod.get("date");
-            String lastVersion = (String) lastPeriod.get("parameter");
+//            String lastVersion = (String) lastPeriod.get("parameter");
 
             if (!("".equals(stageName)) && !("".equals(jobName)) && !("".equals(jobCounter))) {
                 String scheduledTime = getScheduledTime();
@@ -83,7 +86,7 @@ public class SonarTaskExecutor extends TaskExecutor {
                         log("No new scan has been found !");
 
                         log("Date of Sonar scan: " + lastDate);
-                        log("Version of Sonar scan: " + lastVersion);
+//                        log("Version of Sonar scan: " + lastVersion);
 
                         return new Result(false, "Failed to get a newer quality gate for " + sonarProjectKey
                                 + ". The present quality gate is older than the start of the Sonar scan task.");
@@ -94,7 +97,7 @@ public class SonarTaskExecutor extends TaskExecutor {
                 }
 
                 log("Date of Sonar scan: " + lastDate);
-                log("Version of Sonar scan: " + lastVersion);
+//                log("Version of Sonar scan: " + lastVersion);
 
                 SonarParser parser = new SonarParser(result);
 
@@ -108,7 +111,7 @@ public class SonarTaskExecutor extends TaskExecutor {
             else {
 
                 log("Date of Sonar scan: " + lastDate);
-                log("Version of Sonar scan: " + lastVersion);
+//                log("Version of Sonar scan: " + lastVersion);
 
                 SonarParser parser = new SonarParser(result);
 
@@ -182,6 +185,7 @@ public class SonarTaskExecutor extends TaskExecutor {
         return (date1.compareTo(date2));
     }
 
+    @Override
     protected String getPluginLogPrefix(){
         return "[SonarQube Quality Gate Plugin] ";
     }
